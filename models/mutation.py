@@ -26,13 +26,13 @@ class createJugador(Mutation):
         name = String(required=True)
         last_name = String(required=True)
         edad = Int(required=True)
-        pierna_habil = String(required=None)
-        fk_equipo = Int(required=True)
+        equipo_name = String(required=True)
     
     jugadores = Field(lambda: Jugadores)                                          # Persona: se utiliza para definir cómo se mapea el modelo PersonaModel (tabla de la bd) en GraphQL, se importa de objects.py
 
-    def mutate(self, info, name, last_name, edad, fk_equipo , pierna_habil=None):                      # lambda: crea una funcion anonima, lambda parametros: expresion, lambda: expresion (sin parametros)
-        jugadores = JugadoresModel(name=name, last_name=last_name, edad=edad, fk_equipo=fk_equipo ,pierna_habil=pierna_habil)   # PersonaModel: es la tabla "persona" creada de la base de datos, persona.py
+    def mutate(self, info, name, last_name, edad, equipo_name):                      # lambda: crea una funcion anonima, lambda parametros: expresion, lambda: expresion (sin parametros)
+        equipo = EquiposModel.query.filter_by(name=equipo_name).first()             
+        jugadores = JugadoresModel(name=name, last_name=last_name, edad=edad, equipo_id=equipo.id)   # PersonaModel: es la tabla "persona" creada de la base de datos, persona.py
 
         db.session.add(jugadores)
         db.session.commit()
@@ -45,12 +45,11 @@ class updateJugador(Mutation):
         name = String()
         last_name = String()
         edad = Int()
-        pierna_habil = String()
-        fk_equipo = Int()
+        equipo_name = String()
                                                                                     
     jugadores = Field(lambda: Jugadores)                                                 # Field() = se utiliza para definir un campo en un tipo de objeto GraphQL
 
-    def mutate(self, info, jugador_id ,name=None, last_name=None, edad=None, pierna_habil=None, fk_equipo=None):
+    def mutate(self, info, jugador_id ,name=None, last_name=None, edad=None, equipo_name=None):
         jugadores = JugadoresModel.query.get(jugador_id)
         if jugadores:
             if name:
@@ -59,10 +58,9 @@ class updateJugador(Mutation):
                 jugadores.last_name = last_name
             if edad:
                 jugadores.edad = edad
-            if pierna_habil:
-                jugadores.pierna_habil = pierna_habil
-            if fk_equipo:
-                jugadores.fk_equipo = fk_equipo
+            if equipo_name:
+                equipo = EquiposModel.query.filter_by(name=equipo_name).first()
+                jugadores.equipo_id = equipo.id
             
             db.session.add(jugadores)
             db.session.commit()
@@ -92,12 +90,11 @@ class createEquipo(Mutation):
         name = String(required=True)
         pais = String(required=True)
         anio_fundacion = Int(required=True)
-        fk_tecnico = Int(required=True)
     
     equipos = Field(lambda: Equipos)                                          
 
-    def mutate(self, info, name, pais, anio_fundacion, fk_tecnico):                      
-        equipos = EquiposModel(name=name, pais=pais, anio_fundacion=anio_fundacion, fk_tecnico=fk_tecnico) 
+    def mutate(self, info, name, pais, anio_fundacion):                      
+        equipos = EquiposModel(name=name, pais=pais, anio_fundacion=anio_fundacion) 
         db.session.add(equipos)
         db.session.commit()
 
@@ -105,16 +102,15 @@ class createEquipo(Mutation):
     
 class updateEquipo(Mutation):
     class Arguments:
-        equipo_id = Int(required=True)
+        id_equipos = Int(required=True)
         name = String()
         pais = String()
         anio_fundacion = Int()
-        fk_tecnico = Int()
                                                                                     
     equipos = Field(lambda: Equipos)                                                 
 
-    def mutate(self, info, equipo_id ,name=None, pais=None, anio_fundacion=None, fk_tecnico=None):
-        equipos = EquiposModel.query.get(equipo_id)
+    def mutate(self, info, id_equipos ,name=None, pais=None, anio_fundacion=None):
+        equipos = EquiposModel.query.get(id_equipos)
         if equipos:
             if name:
                 equipos.name = name
@@ -122,8 +118,6 @@ class updateEquipo(Mutation):
                 equipos.pais = pais
             if anio_fundacion:
                 equipos.anio_fundacion = anio_fundacion
-            if fk_tecnico:
-                equipos.fk_tecnico = fk_tecnico
             
             db.session.add(equipos)
             db.session.commit()
@@ -132,12 +126,12 @@ class updateEquipo(Mutation):
     
 class deleteEquipo(Mutation):
     class Arguments:
-        equipo_id = Int(required=True)
+        id_equipos = Int(required=True)
 
     equipos = Field(lambda: Equipos)
 
-    def mutate(self, info, equipo_id):
-        equipos = EquiposModel.query.get(equipo_id)
+    def mutate(self, info, id_equipos):
+        equipos = EquiposModel.query.get(id_equipos)
         if equipos:
             db.session.delete(equipos)
             db.session.commit()
@@ -151,13 +145,15 @@ class createTecnico(Mutation):
         name = String(required=True)
         last_name = String(required=True)
         edad = Int(required=True)
-        titulos = Int(required=None)
-        # fk_equipo = Int(required=True)
+        titulos = Int(required=True)
+        equipo_name  = String(required=True)
     
     tecnicos = Field(lambda: Tecnicos)                                          
 
-    def mutate(self, info, name, last_name, edad ,titulos=None):                      
-        tecnicos = TecnicosModel(name=name, last_name=last_name, edad=edad, titulos=titulos) 
+    def mutate(self, info, name, last_name, edad ,titulos, equipo_name):   
+        equipo = EquiposModel.query.filter_by(name=equipo_name).first()                       
+        tecnicos = TecnicosModel(name=name, last_name=last_name, edad=edad, titulos=titulos, equipo_id=equipo.id) 
+
         db.session.add(tecnicos)
         db.session.commit()
 
@@ -170,11 +166,11 @@ class updateTecnico(Mutation):
         last_name = String()
         edad = Int()
         titulos = Int()
-        # fk_equipo = Int()
+        equipo_name = String()
                                                                                     
     tecnicos = Field(lambda: Tecnicos)                                                 
 
-    def mutate(self, info, tecnico_id ,name=None, last_name=None, edad=None, titulos=None):
+    def mutate(self, info, tecnico_id ,name=None, last_name=None, edad=None, titulos=None, equipo_name=None):
         tecnicos = TecnicosModel.query.get(tecnico_id)
         if tecnicos:
             if name:
@@ -185,8 +181,9 @@ class updateTecnico(Mutation):
                 tecnicos.edad = edad
             if titulos:
                 tecnicos.titulos = titulos
-            # if fk_equipo:
-            #     tecnicos.fk_equipo = fk_equipo
+            if equipo_name:
+                equipo = EquiposModel.query.filter_by(name=equipo_name).first()
+                tecnicos.equipo_name = equipo.id
             
             db.session.add(tecnicos)
             db.session.commit()
